@@ -1,11 +1,11 @@
 import Router from "express";
-import { register, login, createAdmin } from "../controllers/userControllers.js";
-import { adminOnly, protect } from "../middleware/authMiddleware.js";
+import { userReg, userLogin  } from "../controllers/userControllers.js";
+
 
 const router = Router();
 
-router.post("/register", register);
-router.post("/login", login);
-router.post("/create-admin", protect, adminOnly, createAdmin); // only admin can make another admin
+router.post("/userReg", userReg);
+router.post("/userLogin", userLogin);
+
 
 export default router;

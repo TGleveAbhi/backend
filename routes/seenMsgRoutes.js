@@ -1,14 +1,16 @@
 import Router from "express";
-import { getSeenByMessage, getSeenByUser, markAsSeen, markBulkAsSeen } from "../controllers/seenMsgController.js";
-import { adminOnly, protect } from "../middleware/authMiddleware.js";
+import {
+  getSeenByMessage,
+  getSeenByUser,
+  markAsSeen,
+} from "../controllers/seenMsgController.js";
+import { protect, raOnly, userOnly } from "../middleware/authMiddleware.js";
 
 const router = Router();
 
-router.post("/", protect, markAsSeen);
-router.post("/bulk", protect, markBulkAsSeen);
-router.get("/message/:messageId", protect, adminOnly, getSeenByMessage);  // give message_id
-router.get("/user/:userId", protect, adminOnly, getSeenByUser);
+router.post("/markSeen", protect, userOnly, markAsSeen);
+// router.post("/bulk", protect, markBulkAsSeen);
+router.get("/message/:messageId", protect, getSeenByMessage); // give message_id
+router.get("/user/:userId", protect, getSeenByUser);
 
 export default router;
-
-

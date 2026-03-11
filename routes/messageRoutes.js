@@ -1,14 +1,15 @@
 import Router from "express";
-import { createMessage, getMessageStats, getMessagesForCommunity } from "../controllers/messageController.js";
-import { protect, adminOnly } from "../middleware/authMiddleware.js";
+import {
+  sendMsg,
+  getMessagesByCommunity,
+} from "../controllers/messageController.js";
+import { protect, raOnly } from "../middleware/authMiddleware.js";
 
-const router = Router()
+const router = Router();
 
-router.post("/", protect, adminOnly, createMessage);
-router.get("/community/:communityId", protect, getMessagesForCommunity);
-router.get("/:messageId/stats", protect, adminOnly, getMessageStats);
-
+router.post("/sendMsg", protect, raOnly, sendMsg);
+// router.get("/community/:communityId", protect, getMessagesForCommunity);
+// router.get("/:messageId/stats", protect, adminOnly, getMessageStats);
+router.get("/getMsg", protect, raOnly, getMessagesByCommunity);
 
 export default router;
-
-

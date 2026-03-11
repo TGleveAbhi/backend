@@ -1,36 +1,117 @@
+// admin create messages (RA)
+
+import { PutCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import ddbDocClient from "../config/dynonoDb.js";
 import Message from "../models/messageModel.js";
-import MessageSeenLog from "../models/seenMsgModel.js";
+import { messageSchema } from "./validators/messageSchema.js";
 
+export const sendMsg = async (req, res) => {
+  try {
+    // 1 Validate request body
+    const result = messageSchema.safeParse(req.body);
 
-// admin create messages
-export const createMessage = async (req, res) => {
-    const { content, community_ids } = req.body; // community_ids is array
-    const message = await Message.create({
-        content,
-        created_by: req.user._id,
-        communities: community_ids
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: result.error.issues.map((issue) => ({
+          field: issue.path.join("."),
+          message: issue.message,
+        })),
+      });
+    }
+
+    const { msgContent, communityName, subCommunityName, msgType } =
+      result.data;
+
+    const raId = req.ra._id;
+    const raName = req.ra.name;
+
+    // 2 Save in MongoDB
+    const mongoMessage = await Message.create({
+      raId,
+      raName,
+      msgContent,
+      community: communityName.trim(),
+      subCommunity: subCommunityName.map((sub) => sub.trim()),
+      msgType: msgType.trim(),
     });
-    res.status(201).json(message);
 
-}
+    // 3 Prepare DynamoDB data
+    const messageData = {
+      msg_id: mongoMessage._id.toString(),
+      raId: raId.toString(),
+      raName,
+      msgContent,
+      community: communityName.trim(),
+      subCommunity: subCommunityName.map((sub) => sub.trim()),
+      msgType: msgType.trim(),
+      createdAt: new Date().toISOString(),
+    };
 
-// Get all messages for a specific community (for users to see their feed)
-export const getMessagesForCommunity = async (req, res) => {
-    const { communityId } = req.params;
-    const messages = await Message.find({ communities: communityId })
-        .populate("created_by", "name")
-        .sort({ createdAt: -1 });
-    res.json(messages);
-}
+    // 4 Save in DynamoDB
+    await ddbDocClient.send(
+      new PutCommand({
+        TableName: "messages",
+        Item: messageData,
+      }),
+    );
 
+    return res.status(201).json({
+      success: true,
+      message: "Message stored in MongoDB and DynamoDB",
+      data: mongoMessage,
+    });
+  } catch (error) {
+    console.error("Send message error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
 
-// Admin gets stats for a message — how many saw it, who, when
-export const getMessageStats = async (req, res) => {
-    const { messageId } = req.params;
-    const logs = await MessageSeenLog.find({ message_id: messageId })
-        .populate("user_id", "name email")
-        .populate("community_id", "name")
-        .sort({ seen_at: 1 });
-    const totalSeen = logs.length;
-    res.json({ message_id: messageId, total_seen: totalSeen, logs });
-}
+export const getMessagesByCommunity = async (req, res) => {
+  try {
+    let { community, subCommunity } = req.body;
+
+    if (!community || !subCommunity) {
+      return res.status(400).json({
+        success: false,
+        message: "community and subCommunity are required",
+      });
+    }
+
+    const params = {
+      TableName: "messages",
+      FilterExpression:
+        "#community = :community AND contains(#subCommunity, :sub)",
+      ExpressionAttributeNames: {
+        "#community": "community",
+        "#subCommunity": "subCommunity",
+      },
+      ExpressionAttributeValues: {
+        ":community": community,
+        ":sub": subCommunity,
+      },
+    };
+
+    if (!params) {
+      return res.status(400).json({ data: null, success: false });
+    }
+
+    const result = await ddbDocClient.send(new ScanCommand(params));
+
+    return res.status(200).json({
+      success: true,
+      count: result.Items?.length || 0,
+      data: result.Items,
+    });
+  } catch (error) {
+    console.error("Fetch messages error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};

@@ -1,11 +1,29 @@
 import mongoose from "mongoose";
 
-const messageSchema = new mongoose.Schema({
-    content:     { type: String, required: true },
-    created_by:  { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // admin
-    communities: [{ type: mongoose.Schema.Types.ObjectId, ref: "Community" }], // broadcast to these
-    total_seen:  { type: Number, default: 0 } // cached count for fast admin dashboard
-  }, { timestamps: true });
+const messageSchema = new mongoose.Schema(
+  {
+    raName: { type: String, required: true },
+    raId: { type: String, required: true },
+    msgContent: { type: String, required: true },
+    community: {
+      type: String,
+      required: true,
+      enum: ["nifty", "equity", "commodity", "swingTrade"],
+    },
+    subCommunity: {
+      type:[ String],
+      required: true,
+    },
+    msgType: {
+      type: String,
+      required: true,
+      enum: ["trade", "promotion", "flaunt", "feedback", "follow-up"],
+    },
 
-  const Message = mongoose.model("Message",messageSchema);
-  export default Message;
+    total_seen: { type: Number, default: 0 }, // cached count for fast admin dashboard
+  },
+  { timestamps: true },
+);
+
+const Message = mongoose.model("Message", messageSchema);
+export default Message;
