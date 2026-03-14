@@ -18,6 +18,7 @@ const messageSeenLogSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+
     seen_at: { type: Date, required: true },
     msgType: {
       type: String,

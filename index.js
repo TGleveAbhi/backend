@@ -16,7 +16,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/raAuth", raRoutes);
 app.use("/api/messages", messageRoutes);
-app.use("/api/seen", seenRoutes);
+app.use("/api/logs", seenRoutes);
 
 app.listen(port, () => {
   console.log(`server running on port:${port}`);

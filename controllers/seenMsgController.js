@@ -1,6 +1,5 @@
 import MessageSeenLog from "../models/seenMsgModel.js";
 import Message from "../models/messageModel.js";
-import { success } from "zod";
 import User from "../models/userModel.js";
 import mongoose from "mongoose";
 
@@ -13,6 +12,13 @@ export const markAsSeen = async (req, res) => {
       return res
         .status(400)
         .json({ data: null, success: true, message: "one field missing" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(message_id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid message id",
+      });
     }
     const message = await Message.findById(message_id);
     if (!message) {
@@ -38,6 +44,13 @@ export const markAsSeen = async (req, res) => {
     }
 
     const msgType = message.msgType;
+    if (msgType !== "trade") {
+      return res.status(400).json({
+        data: null,
+        success: false,
+        message: "invalid message , message should trade message",
+      });
+    }
 
     // insertOne will fail // will throw error silently if duplicate (because of unique index)
     const log = await MessageSeenLog.create({
@@ -172,7 +185,6 @@ export const getSeenByUser = async (req, res) => {
     // 1 Find all logs for this user
     const logs = await MessageSeenLog.find({
       user_id: userId,
-      msgType: "trade",
     })
       .populate({
         path: "message_id",
