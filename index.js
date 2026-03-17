@@ -9,7 +9,7 @@ import seenRoutes from "./routes/seenMsgRoutes.js";
 
 const app = express();
 
-const port = 8080;
+const port = 5000;
 
 app.use(express.json());
 
@@ -18,7 +18,11 @@ app.use("/api/raAuth", raRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/logs", seenRoutes);
 
-app.listen(port, () => {
+app.post("/test", (req, res) => {
+  res.send("test working");
+});
+
+app.listen(port,"0.0.0.0", () => {
   console.log(`server running on port:${port}`);
   connectDb();
 });
